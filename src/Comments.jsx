@@ -30,6 +30,47 @@ const CommentsComponent = () => {
   const [isReplying, setIsReplying] = useState(false);
   const [activeCommentId, setActiveCommentId] = useState(null);
 
+  // Add state to keep track of the reply being edited
+  const [editing, setEditing] = useState(null);
+  const [editText, setEditText] = useState('');
+
+  // Function to handle initiating the edit of a reply
+  const handleEditReply = (commentId, reply) => {
+    setEditing({ commentId, replyId: reply.id });
+    setEditText(reply.content);
+  };
+
+  // Function to handle the change of edit text
+  const handleEditTextChange = (event) => {
+    setEditText(event.target.value);
+  };
+
+// Function to save the edited reply
+    const handleSaveEdit = () => {
+      // Update the comments state with the edited reply
+      setComments(comments.map(comment => {
+        if (comment.id === editing.commentId) {
+          // Map through the replies to find and update the edited reply
+          const updatedReplies = comment.replies.map(reply => {
+            if (reply.id === editing.replyId) {
+              return { ...reply, content: editText };
+            }
+            return reply;
+          });
+          return { ...comment, replies: updatedReplies };
+        }
+        return comment;
+      }));
+
+      // Reset editing state and clear edit text
+      setEditing(null);
+      setEditText('');
+    };
+
+
+  //
+
+
     // Function to show the reply form
     const showReplyForm = (commentId) => {
       setIsReplying(true);
@@ -121,6 +162,37 @@ const CommentsComponent = () => {
       }
     };
 
+    const handleVote = (commentId, replyId, delta) => {
+      setComments(comments.map(comment => {
+        if (replyId && comment.id === commentId) {
+          return {
+            ...comment,
+            replies: comment.replies.map(reply => {
+              if (reply.id === replyId) {
+                // Ensure userVote is a number before adding delta
+                const currentVote = reply.userVote || 0;
+                // Apply the delta if the current vote and delta are not canceling each other out
+                // or if there's no vote yet
+                if ((currentVote === 1 && delta === -1) || (currentVote === -1 && delta === 1) || currentVote === 0) {
+                  return { ...reply, score: reply.score + delta, userVote: currentVote + delta };
+                }
+              }
+              return reply;
+            }),
+          };
+        } else if (!replyId && comment.id === commentId) {
+          // Similar logic for comments
+          const currentVote = comment.userVote || 0;
+          if ((currentVote === 1 && delta === -1) || (currentVote === -1 && delta === 1) || currentVote === 0) {
+            return { ...comment, score: comment.score + delta, userVote: currentVote + delta };
+          }
+        }
+        return comment;
+      }));
+    };
+
+
+
 
 
 
@@ -139,9 +211,9 @@ const CommentsComponent = () => {
             <p className='grey-blue mb-4'>{comment.content}</p>
             <div className='flex justify-between'>
               <div className='flex space-x-2 bg-grey p-2 rounded-lg items-center'>
-                <img src={plusIcon} alt="" className='h-4 w-4'/>
+                <img src={plusIcon} alt="" className='h-4 w-4'onClick={() => handleVote(comment.id, comment.reply, 1)}/>
                 <p className='dark-blue font-bold'>{comment.score}</p>
-                <img src={minusIcon} alt="" className='h-1 w-4'/>
+                <img src={minusIcon} alt="" className='h-1 w-4' onClick={() => handleVote(comment.id, comment.reply, -1)}/>
               </div>
               <div className='flex space-x-2 items-center cursor-pointer' onClick={() => showReplyForm(comment.id)}>
                 <img src={replyIcon} alt="" className='h-4 w-4'/>
@@ -155,46 +227,56 @@ const CommentsComponent = () => {
             <div className='w-[99%]'>
             {comment.replies && comment.replies.length > 0 && (
               <div className=''>
-                {comment.replies.map(reply=> (
+                {comment.replies.map((reply) => (
                   <div key={reply.id} className='bg-white m-4 p-4 rounded-lg'>
-                    <div className='flex'>
-                      <img src={getImagePath(reply.user.username)} alt={reply.user.username} className='h-10 w-10 mr-8'/>
-                      <div className='py-2 flex mb-4'>
-                        <h2 className='dark-blue font-bold mr-2'>{reply.user.username}</h2>
-                        {reply.user.username === "juliusomo" && (
-                        <p className='bg-blue-primary px-2 mr-2 rounded-sm text-white'>you</p>
-                        )}
-                        <p className='grey-blue font-medium'>{reply.createdAt}</p>
+                    {editing && editing.replyId === reply.id ? (
+                      <div>
+                        <input
+                          type="text"
+                          value={editText}
+                          onChange={handleEditTextChange}
+                          className="reply-edit-input" // Add your styling class for the input field
+                        />
+                        <button onClick={handleSaveEdit} className="save-edit-btn blue-primary text-white py-2 px-4 font-bold">Save</button>
+                        <button onClick={() => setEditing(null)} className="cancel-edit-btn red font-bold">Cancel</button>
                       </div>
-                    </div>
-                    <p className='grey-blue mb-4'><span className='blue-primary font-bold'>@{reply.replyingTo}</span> {reply.content}</p>
-                    <div className='flex justify-between'>
-                      <div className='flex space-x-2 bg-grey p-2 rounded-lg items-center'>
-                        <img src={plusIcon} alt="" className='h-4 w-4'/>
-                        <p className='dark-blue font-bold'>{reply.score}</p>
-                        <img src={minusIcon} alt="" className='h-1 w-4'/>
-                      </div>
-                      {reply.user.username !== "juliusomo" && (
-                        <div className='flex space-x-2 items-center cursor-pointer' onClick={() => showReplyForm(comment.id)}>
-                          <img src={replyIcon} alt="" className='h-4 w-4'/>
-                          <p className='blue-primary font-bold'>Reply</p>
-                        </div>
-                        )}
-                      {reply.user.username === "juliusomo" && (
-                        <div className='flex space-x-4 items-center'>
-                          <div className="flex space-x-2 items-center cursor-pointer" onClick={() => handleDeleteComment(comment.id, reply.id)}>
-                            <img src={deleteIcon} alt="" className='h-4 w-4'/>
-                            <p className='red font-bold'>Delete</p>
-                          </div>
-                          <div className="flex space-x-2 items-center">
-                            <img src={editIcon} alt="" className='h-4 w-4'/>
-                            <p className='blue-primary font-bold'>Edit</p>
+                    ) : (
+                      <div className='flex flex-col'>
+                        <div className='flex'>
+                          <img src={getImagePath(reply.user.username)} alt={reply.user.username} className='h-10 w-10 mr-8'/>
+                          <div className='py-2 flex mb-4'>
+                            <h2 className='dark-blue font-bold mr-2'>{reply.user.username}</h2>
+                            {reply.user.username === "juliusomo" && (
+                              <p className='bg-blue-primary px-2 mr-2 rounded-sm text-white'>you</p>
+                            )}
+                            <p className='grey-blue font-medium'>{timeAgo(reply.createdAt)}</p>
                           </div>
                         </div>
-                        )}
-                    </div>
+                        <p className='grey-blue mb-4'><span className='blue-primary font-bold'>@{reply.replyingTo}</span> {reply.content}</p>
+                        <div className='flex justify-between'>
+                          <div className='flex space-x-2 bg-grey p-2 rounded-lg items-center'>
+                            <img src={plusIcon} alt="" className='h-4 w-4' onClick={() => handleVote(comment.id, reply.id, 1)}/>
+                            <p className='dark-blue font-bold'>{reply.score}</p>
+                            <img src={minusIcon} alt="" className='h-1 w-4' onClick={() => handleVote(comment.id, reply.id, -1)}/>
+                          </div>
+                          {reply.user.username === "juliusomo" && (
+                            <div className='flex space-x-4 items-center'>
+                              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => handleDeleteComment(comment.id, reply.id)}>
+                                <img src={deleteIcon} alt="" className='h-4 w-4'/>
+                                <p className='red font-bold'>Delete</p>
+                              </div>
+                              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => handleEditReply(comment.id, reply)}>
+                                <img src={editIcon} alt="" className='h-4 w-4'/>
+                                <p className='blue-primary font-bold'>Edit</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
+
               </div>
             )}
             </div>
