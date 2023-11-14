@@ -5,9 +5,38 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: hsl(228, 33%, 97%);
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+.dark-blue {
+  color: hsl(212, 24%, 26%);
+}
+
+.grey {
+  color: hsl(223, 19%, 93%);
+}
+
+.bg-grey {
+  background-color: hsl(223, 19%, 93%);
+}
+
+.grey-blue {
+  color: hsl(211, 10%, 45%);
+}
+
+.blue-primary {
+  color: hsl(238, 40%, 52%)
+}
+
+.bg-blue-primary {
+    background-color: hsl(238, 40%, 52%)
+}
+
+.red {
+  color: hsl(358, 79%, 66%);
 }
