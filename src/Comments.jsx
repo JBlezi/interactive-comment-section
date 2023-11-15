@@ -34,10 +34,26 @@ const CommentsComponent = () => {
   const [editing, setEditing] = useState(null);
   const [editText, setEditText] = useState('');
 
+  // Add state to keep track of the reply being edited
+  const [editingComment, setEditingComment] = useState(null);
+  const [editComment, setEditComment] = useState('');
+
+
+  // Function to handle initiating the edit of a comment
+  const handleEditComment = (comment) => {
+  setEditingComment({ commentId: comment.id });
+  setEditComment(comment.content);
+  };
+
   // Function to handle initiating the edit of a reply
   const handleEditReply = (commentId, reply) => {
-    setEditing({ commentId, replyId: reply.id });
-    setEditText(reply.content);
+  setEditing({ commentId, replyId: reply.id });
+  setEditText(reply.content);
+  };
+
+  // Function to handle the change of edit text
+  const handleEditCommentChange = (event) => {
+    setEditComment(event.target.value);
   };
 
   // Function to handle the change of edit text
@@ -45,8 +61,27 @@ const CommentsComponent = () => {
     setEditText(event.target.value);
   };
 
-// Function to save the edited reply
-    const handleSaveEdit = () => {
+  const handleSaveEditComment = () => {
+      // Check if we're editing a comment or a reply
+      if (editingComment.commentId) {
+        // We're editing an original comment
+        setComments(comments.map(comment => {
+          if (comment.id === editingComment.commentId) {
+            // Update the content of the original comment
+            return { ...comment, content: editComment };
+          }
+          return comment;
+        }));
+      }
+
+      setEditingComment(null);
+      setEditComment('');
+  }
+
+  // Function to save the edited comment or reply
+  const handleSaveEdit = () => {
+    // Check if we're editing a comment or a reply
+    if (editing.replyId) {
       // Update the comments state with the edited reply
       setComments(comments.map(comment => {
         if (comment.id === editing.commentId) {
@@ -61,11 +96,12 @@ const CommentsComponent = () => {
         }
         return comment;
       }));
+    }
 
-      // Reset editing state and clear edit text
-      setEditing(null);
-      setEditText('');
-    };
+    // Reset editing state and clear edit text
+    setEditing(null);
+    setEditText('');
+  };
 
 
   //
@@ -84,42 +120,46 @@ const CommentsComponent = () => {
       setNewComment(event.target.value);
     };
 
-      // Handler for the form submission
-      const handleCommentSubmit = (event) => {
-        event.preventDefault(); // Prevent the form from reloading the page
+    const handleCommentSubmit = (event) => {
+      event.preventDefault(); // Prevent the form from reloading the page
 
-        // Create a new reply object
-        const replyToAdd = {
-          id: new Date().getTime(),
-          content: newComment,
-          createdAt: timeAgo(new Date().toISOString()),
-          score: 0,
-          replyingTo: comments.find(comment => comment.id === activeCommentId).user.username,
-          user: {
-            image: { png: juliusomo }, // Replace with actual image path or logic
-            username: 'juliusomo' // Replace with the current user's username
-          }
-        };
+      const newCommentObject = {
+        id: new Date().getTime(),
+        content: newComment,
+        createdAt: new Date().toISOString(),
+        score: 0,
+        user: {
+          image: { png: juliusomo }, // Replace with actual image path or logic
+          username: 'juliusomo' // Replace with the current user's username
+        },
+        replies: []
+      };
 
-        // Add the new reply to the replies array of the parent comment
+      if (activeCommentId) {
+        // We are adding a reply to an existing comment
+        const parentComment = comments.find(comment => comment.id === activeCommentId);
+        newCommentObject.replyingTo = parentComment.user.username;
+
         setComments(comments.map(comment => {
           if (comment.id === activeCommentId) {
-            // If we're at the parent comment, add the new reply to its replies array
             return {
               ...comment,
-              replies: [...comment.replies, replyToAdd]
+              replies: [...comment.replies, newCommentObject]
             };
-          } else {
-            // If we're not at the parent comment, return the comment unchanged
-            return comment;
           }
+          return comment;
         }));
+      } else {
+        // We are adding an original comment
+        setComments([...comments, newCommentObject]);
+      }
 
-        // Reset the input field and hide the reply form
-        setNewComment('');
-        setIsReplying(false);
-        setActiveCommentId(null);
-      };
+      // Reset the input fields and state
+      setNewComment('');
+      setIsReplying(false);
+      setActiveCommentId(null);
+    };
+
 
       const handleDeleteComment = (commentId, replyId) => {
         // If replyId is provided, delete the reply from the specific comment's replies
@@ -201,33 +241,90 @@ const CommentsComponent = () => {
       {comments.map(comment => (
         <div key={comment.id}>
           <div className='bg-white m-4 p-4 rounded-lg'>
-            <div className='flex'>
-              <img src={getImagePath(comment.user.username)} alt={comment.user.username} className='h-10 w-10 mr-8'/>
-              <div className='py-2 flex mb-4'>
-                <h2 className='dark-blue font-bold mr-4'>{comment.user.username}</h2>
-                <p className='grey-blue font-medium'>{comment.createdAt}</p>
-              </div>
-            </div>
-            <p className='grey-blue mb-4'>{comment.content}</p>
-            <div className='flex justify-between'>
-              <div className='flex space-x-2 bg-grey p-2 rounded-lg items-center'>
-                <img src={plusIcon} alt="" className='h-4 w-4'onClick={() => handleVote(comment.id, comment.reply, 1)}/>
-                <p className='dark-blue font-bold'>{comment.score}</p>
-                <img src={minusIcon} alt="" className='h-1 w-4' onClick={() => handleVote(comment.id, comment.reply, -1)}/>
-              </div>
-              <div className='flex space-x-2 items-center cursor-pointer' onClick={() => showReplyForm(comment.id)}>
-                <img src={replyIcon} alt="" className='h-4 w-4'/>
-                <p className='blue-primary font-bold'>Reply</p>
-              </div>
-            </div>
+                    {editingComment && editingComment.commentId === comment.id ? (
+                      <div>
+                        <input
+                          type="text"
+                          value={editComment}
+                          onChange={handleEditCommentChange}
+                          className="reply-edit-input"
+                        />
+                        <button onClick={handleSaveEditComment} className="save-edit-btn blue-primary text-white py-2 px-4 font-bold">Save</button>
+                        <button onClick={() => setEditingComment(null)} className="cancel-edit-btn red font-bold">Cancel</button>
+                      </div>
+                    ) : (
+                      <div className='flex flex-col'>
+                        <div className='flex'>
+                          <img src={getImagePath(comment.user.username)} alt={comment.user.username} className='h-10 w-10 mr-8'/>
+                          <div className='py-2 flex mb-4'>
+                            <h2 className='dark-blue font-bold mr-2'>{comment.user.username}</h2>
+                            {comment.user.username === "juliusomo" && (
+                              <div className='flex'>
+                                <p className='bg-blue-primary px-2 mr-2 rounded-sm text-white'>you</p>
+                                <p className='grey-blue font-medium'>{timeAgo(comment.createdAt)}</p>
+                              </div>
+                            )}
+                            {comment.user.username !== "juliusomo" && (
+                              <p className='grey-blue font-medium'>{comment.createdAt}</p>
+                            )}
+                          </div>
+                        </div>
+                        <p className='grey-blue mb-4'>{comment.content}</p>
+                        <div className='flex justify-between'>
+                          <div className='flex space-x-2 bg-grey p-2 rounded-lg items-center'>
+                            <img src={plusIcon} alt="" className='h-4 w-4' onClick={() => handleVote(comment.id, null, 1)}/>
+                            <p className='dark-blue font-bold'>{comment.score}</p>
+                            <img src={minusIcon} alt="" className='h-1 w-4' onClick={() => handleVote(comment.id, null, -1)}/>
+                          </div>
+                          {comment.user.username !== "juliusomo" && (
+                            <div className='flex space-x-2 items-center cursor-pointer' onClick={() => showReplyForm(comment.id)}>
+                              <img src={replyIcon} alt="" className='h-4 w-4'/>
+                              <p className='blue-primary font-bold'>Reply</p>
+                            </div>
+                          )}
+                          {comment.user.username === "juliusomo" && (
+                            <div className='flex space-x-4 items-center'>
+                              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => handleDeleteComment(comment.id)}>
+                                <img src={deleteIcon} alt="" className='h-4 w-4'/>
+                                <p className='red font-bold'>Delete</p>
+                              </div>
+                              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => handleEditComment(comment)}>
+                                <img src={editIcon} alt="" className='h-4 w-4'/>
+                                <p className='blue-primary font-bold'>Edit</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
           </div>
           <div className='flex'>
             <div className='border-l-2 border-grey w-[1%] ml-4'>
             </div>
             <div className='w-[99%]'>
+            <div className='bg-white rounded-lg m-4'>
+              {isReplying && activeCommentId === comment.id && (
+                <form onSubmit={handleCommentSubmit} className='flex flex-col'>
+                  <input
+                    type="text"
+                    value={newComment}
+                    onChange={handleNewCommentChange}
+                    placeholder="    Add a comment..."
+                    className='w-fit-container m-4 h-32 rounded-lg border-grey border'
+                  />
+                  <div className='flex justify-between my-4'>
+                    <img src={juliusomo} alt="" className='h-12 w-12 mx-4'/>
+                    <button type="submit" className='mx-4 bg-blue-primary text-white py-4 px-8 rounded-lg'>
+                      SEND
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
             {comment.replies && comment.replies.length > 0 && (
               <div className=''>
-                {comment.replies.map((reply) => (
+                {comment.replies.map((reply, index) => (
                   <div key={reply.id} className='bg-white m-4 p-4 rounded-lg'>
                     {editing && editing.replyId === reply.id ? (
                       <div>
@@ -235,7 +332,7 @@ const CommentsComponent = () => {
                           type="text"
                           value={editText}
                           onChange={handleEditTextChange}
-                          className="reply-edit-input" // Add your styling class for the input field
+                          className="reply-edit-input"
                         />
                         <button onClick={handleSaveEdit} className="save-edit-btn blue-primary text-white py-2 px-4 font-bold">Save</button>
                         <button onClick={() => setEditing(null)} className="cancel-edit-btn red font-bold">Cancel</button>
@@ -246,10 +343,15 @@ const CommentsComponent = () => {
                           <img src={getImagePath(reply.user.username)} alt={reply.user.username} className='h-10 w-10 mr-8'/>
                           <div className='py-2 flex mb-4'>
                             <h2 className='dark-blue font-bold mr-2'>{reply.user.username}</h2>
-                            {reply.user.username === "juliusomo" && (
-                              <p className='bg-blue-primary px-2 mr-2 rounded-sm text-white'>you</p>
+                            {reply.user.username === "juliusomo" && reply.replyingTo !== "ramsesmiron" && (
+                              <div className='flex'>
+                                <p className='bg-blue-primary px-2 mr-2 rounded-sm text-white'>you</p>
+                                <p className='grey-blue font-medium'>{timeAgo(reply.createdAt)}</p>
+                              </div>
                             )}
-                            <p className='grey-blue font-medium'>{timeAgo(reply.createdAt)}</p>
+                            {(reply.user.username !== "juliusomo" || (reply.user.username === "juliusomo" && reply.replyingTo === "ramsesmiron")) && (
+                              <p className='grey-blue font-medium'>{reply.createdAt}</p>
+                            )}
                           </div>
                         </div>
                         <p className='grey-blue mb-4'><span className='blue-primary font-bold'>@{reply.replyingTo}</span> {reply.content}</p>
@@ -276,30 +378,9 @@ const CommentsComponent = () => {
                     )}
                   </div>
                 ))}
-
               </div>
             )}
             </div>
-          </div>
-          <div className='bg-white rounded-lg m-4'>
-            {isReplying && activeCommentId === comment.id && (
-              <form onSubmit={handleCommentSubmit} className='flex flex-col'>
-                <input
-                  type="text"
-                  value={newComment}
-                  onChange={handleNewCommentChange}
-                  placeholder="    Add a comment..."
-                  // Any other input attributes and styling classes
-                  className='w-fit-container m-4 h-32 rounded-lg border-grey border'
-                />
-                <div className='flex justify-between my-4'>
-                  <img src={juliusomo} alt="" className='h-12 w-12 mx-4'/>
-                  <button type="submit" className='mx-4 bg-blue-primary text-white py-4 px-8 rounded-lg'>
-                    SEND
-                  </button>
-                </div>
-              </form>
-            )}
           </div>
         </div>
       ))}
@@ -310,7 +391,6 @@ const CommentsComponent = () => {
             value={newComment}
             onChange={handleNewCommentChange}
             placeholder="    Add a comment..."
-            // Any other input attributes and styling classes
             className='w-fit-container m-4 h-32 rounded-lg border-grey border'
           />
           <div className='flex justify-between my-4'>
