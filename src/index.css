@@ -6,6 +6,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: hsl(228, 33%, 97%);
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 code {
@@ -29,6 +31,10 @@ code {
   color: hsl(211, 10%, 45%);
 }
 
+.bg-grey-blue {
+  background-color: hsl(211, 10%, 45%);
+}
+
 .blue-primary {
   color: hsl(238, 40%, 52%)
 }
@@ -39,4 +45,8 @@ code {
 
 .red {
   color: hsl(358, 79%, 66%);
+}
+
+.bg-tomato {
+  background-color: hsl(358, 79%, 66%);
 }

@@ -38,6 +38,45 @@ const CommentsComponent = () => {
   const [editingComment, setEditingComment] = useState(null);
   const [editComment, setEditComment] = useState('');
 
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
+
+  const showDeleteModal = (commentId, replyId) => {
+    setIsDeleteModalOpen(true);
+    setItemToDelete({ commentId, replyId });
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setItemToDelete(null);
+  };
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      handleDeleteComment(itemToDelete.commentId, itemToDelete.replyId);
+      closeDeleteModal();
+    }
+  };
+
+  const DeleteConfirmationModal = ({ isOpen, onConfirm, onCancel }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center ">
+        <div className="p-8 rounded-lg fixed top-[50%] left-[50%] -translate-y-1/2 -translate-x-1/2 bg-white max-w-md">
+          <h2 className='font-bold text-2xl dark-blue'>Delete comment</h2>
+          <p className='my-4'>Are you sure you want to delete this comment? This will remove the comment and can't be undone.</p>
+          <div className='flex mt-4 space-x-4'>
+            <button onClick={onCancel} className='bg-grey-blue text-white py-4 px-8 font-bold rounded-lg hover:opacity-50'>NO, CANCEL</button>
+            <button onClick={onConfirm} className='bg-tomato text-white py-4 px-8 font-bold rounded-lg hover:opacity-50'>YES, DELETE</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+
+
 
   // Function to handle initiating the edit of a comment
   const handleEditComment = (comment) => {
@@ -112,7 +151,6 @@ const CommentsComponent = () => {
       setIsReplying(true);
       setActiveCommentId(commentId);
     };
-
 
 
     // Handler for the comment input change
@@ -242,15 +280,17 @@ const CommentsComponent = () => {
         <div key={comment.id}>
           <div className='bg-white m-4 p-4 rounded-lg'>
                     {editingComment && editingComment.commentId === comment.id ? (
-                      <div>
+                      <div className='flex flex-col'>
                         <input
                           type="text"
                           value={editComment}
                           onChange={handleEditCommentChange}
-                          className="reply-edit-input"
+                          className="reply-edit-input w-full h-32 rounded-lg border-grey border cursor-pointer"
                         />
-                        <button onClick={handleSaveEditComment} className="save-edit-btn blue-primary text-white py-2 px-4 font-bold">Save</button>
-                        <button onClick={() => setEditingComment(null)} className="cancel-edit-btn red font-bold">Cancel</button>
+                        <div className='flex justify-between mt-4'>
+                          <img src={juliusomo} alt="" className='h-12 w-12'/>
+                          <button onClick={handleSaveEditComment} className="save-edit-btn bg-blue-primary text-white font-bold py-4 px-8 rounded-lg hover:opacity-50">SAVE</button>
+                        </div>
                       </div>
                     ) : (
                       <div className='flex flex-col'>
@@ -272,25 +312,25 @@ const CommentsComponent = () => {
                         <p className='grey-blue mb-4'>{comment.content}</p>
                         <div className='flex justify-between'>
                           <div className='flex space-x-2 bg-grey p-2 rounded-lg items-center'>
-                            <img src={plusIcon} alt="" className='h-4 w-4' onClick={() => handleVote(comment.id, null, 1)}/>
+                            <img src={plusIcon} alt="" className='h-4 w-4 cursor-pointer' onClick={() => handleVote(comment.id, null, 1)}/>
                             <p className='dark-blue font-bold'>{comment.score}</p>
-                            <img src={minusIcon} alt="" className='h-1 w-4' onClick={() => handleVote(comment.id, null, -1)}/>
+                            <img src={minusIcon} alt="" className='h-1 w-4 cursor-pointer' onClick={() => handleVote(comment.id, null, -1)}/>
                           </div>
                           {comment.user.username !== "juliusomo" && (
-                            <div className='flex space-x-2 items-center cursor-pointer' onClick={() => showReplyForm(comment.id)}>
+                            <div className='flex space-x-2 items-center cursor-pointer hover:opacity-50' onClick={() => showReplyForm(comment.id)}>
                               <img src={replyIcon} alt="" className='h-4 w-4'/>
-                              <p className='blue-primary font-bold'>Reply</p>
+                              <p className='blue-primary font-bold'>REPLY</p>
                             </div>
                           )}
                           {comment.user.username === "juliusomo" && (
                             <div className='flex space-x-4 items-center'>
-                              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => handleDeleteComment(comment.id)}>
+                              <div className="flex space-x-2 items-center cursor-pointer hover:opacity-50" onClick={() => showDeleteModal(comment.id, null)}>
                                 <img src={deleteIcon} alt="" className='h-4 w-4'/>
-                                <p className='red font-bold'>Delete</p>
+                                <p className='red font-bold'>DELETE</p>
                               </div>
-                              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => handleEditComment(comment)}>
+                              <div className="flex space-x-2 items-center cursor-pointer hover:opacity-50" onClick={() => handleEditComment(comment)}>
                                 <img src={editIcon} alt="" className='h-4 w-4'/>
-                                <p className='blue-primary font-bold'>Edit</p>
+                                <p className='blue-primary font-bold'>EDIT</p>
                               </div>
                             </div>
                           )}
@@ -311,11 +351,11 @@ const CommentsComponent = () => {
                     value={newComment}
                     onChange={handleNewCommentChange}
                     placeholder="    Add a comment..."
-                    className='w-fit-container m-4 h-32 rounded-lg border-grey border'
+                    className='w-fit-container m-4 h-32 rounded-lg border-grey border cursor-pointer'
                   />
                   <div className='flex justify-between my-4'>
                     <img src={juliusomo} alt="" className='h-12 w-12 mx-4'/>
-                    <button type="submit" className='mx-4 bg-blue-primary text-white py-4 px-8 rounded-lg'>
+                    <button type="submit" className='mx-4 bg-blue-primary text-white py-4 px-8 rounded-lg hover:opacity-50 font-bold'>
                       SEND
                     </button>
                   </div>
@@ -327,15 +367,17 @@ const CommentsComponent = () => {
                 {comment.replies.map((reply, index) => (
                   <div key={reply.id} className='bg-white m-4 p-4 rounded-lg'>
                     {editing && editing.replyId === reply.id ? (
-                      <div>
+                      <div className='flex flex-col'>
                         <input
                           type="text"
                           value={editText}
                           onChange={handleEditTextChange}
-                          className="reply-edit-input"
+                          className="reply-edit-input w-full h-32 rounded-lg border-grey border"
                         />
-                        <button onClick={handleSaveEdit} className="save-edit-btn blue-primary text-white py-2 px-4 font-bold">Save</button>
-                        <button onClick={() => setEditing(null)} className="cancel-edit-btn red font-bold">Cancel</button>
+                        <div className='flex justify-between mt-4'>
+                          <img src={juliusomo} alt="" className='h-12 w-12'/>
+                          <button onClick={handleSaveEdit} className="save-edit-btn bg-blue-primary text-white font-bold py-4 px-8 rounded-lg hover:opacity-50">SAVE</button>
+                        </div>
                       </div>
                     ) : (
                       <div className='flex flex-col'>
@@ -357,19 +399,19 @@ const CommentsComponent = () => {
                         <p className='grey-blue mb-4'><span className='blue-primary font-bold'>@{reply.replyingTo}</span> {reply.content}</p>
                         <div className='flex justify-between'>
                           <div className='flex space-x-2 bg-grey p-2 rounded-lg items-center'>
-                            <img src={plusIcon} alt="" className='h-4 w-4' onClick={() => handleVote(comment.id, reply.id, 1)}/>
+                            <img src={plusIcon} alt="" className='h-4 w-4 cursor-pointer' onClick={() => handleVote(comment.id, reply.id, 1)}/>
                             <p className='dark-blue font-bold'>{reply.score}</p>
-                            <img src={minusIcon} alt="" className='h-1 w-4' onClick={() => handleVote(comment.id, reply.id, -1)}/>
+                            <img src={minusIcon} alt="" className='h-1 w-4 cursor-pointer' onClick={() => handleVote(comment.id, reply.id, -1)}/>
                           </div>
                           {reply.user.username === "juliusomo" && (
                             <div className='flex space-x-4 items-center'>
-                              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => handleDeleteComment(comment.id, reply.id)}>
+                              <div className="flex space-x-2 items-center cursor-pointer hover:opacity-50" onClick={() => showDeleteModal(comment.id, reply ? reply.id : null)}>
                                 <img src={deleteIcon} alt="" className='h-4 w-4'/>
-                                <p className='red font-bold'>Delete</p>
+                                <p className='red font-bold'>DELETE</p>
                               </div>
-                              <div className="flex space-x-2 items-center cursor-pointer" onClick={() => handleEditReply(comment.id, reply)}>
+                              <div className="flex space-x-2 items-center cursor-pointer hover:opacity-50" onClick={() => handleEditReply(comment.id, reply)}>
                                 <img src={editIcon} alt="" className='h-4 w-4'/>
-                                <p className='blue-primary font-bold'>Edit</p>
+                                <p className='blue-primary font-bold'>EDIT</p>
                               </div>
                             </div>
                           )}
@@ -391,16 +433,24 @@ const CommentsComponent = () => {
             value={newComment}
             onChange={handleNewCommentChange}
             placeholder="    Add a comment..."
-            className='w-fit-container m-4 h-32 rounded-lg border-grey border'
+            className='w-fit-container m-4 h-32 rounded-lg border-grey border cursor-pointer'
           />
           <div className='flex justify-between my-4'>
             <img src={juliusomo} alt="" className='h-12 w-12 mx-4'/>
-            <button type="submit" className='mx-4 bg-blue-primary text-white py-4 px-8 rounded-lg'>
+            <button type="submit" className='mx-4 bg-blue-primary text-white py-4 px-8 font-bold rounded-lg hover:opacity-50'>
               SEND
             </button>
           </div>
         </form>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onConfirm={confirmDelete}
+        onCancel={closeDeleteModal}
+      />
+
+
     </div>
   );
 }
