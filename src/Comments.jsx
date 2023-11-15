@@ -290,7 +290,7 @@ const CommentsComponent = () => {
 
 
   return (
-    <div className=''>
+    <div className='max-width-custom'>
       {comments.map(comment => (
         <div key={comment.id}>
           <div className='bg-white m-4 p-4 rounded-lg'>

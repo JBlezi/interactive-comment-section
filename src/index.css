@@ -5,11 +5,15 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: hsl(228, 33%, 97%);
-  max-width: 800px;
+
   margin: 0 auto !important;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.max-width-custom {
+  max-width: 800px;
 }
 
 code {
