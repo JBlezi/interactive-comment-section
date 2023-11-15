@@ -6,7 +6,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: hsl(228, 33%, 97%);
   max-width: 800px;
-  margin: 0 auto;
+  margin: 0 auto !important;
 }
 
 code {
