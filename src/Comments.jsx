@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import commentsData from './data.json';
 import amyrobson from './images/avatars/image-amyrobson.png';
 import juliusomo from './images/avatars/image-juliusomo.png';
@@ -12,6 +12,7 @@ import deleteIcon from './images/icon-delete.svg';
 
 
 const CommentsComponent = () => {
+
   const avatarMap = {
     amyrobson,
     juliusomo,
@@ -23,8 +24,16 @@ const CommentsComponent = () => {
     return avatarMap[username];
   };
 
+
+
   // State for the list of comments and the new comment input
-  const [comments, setComments] = useState(commentsData.comments);
+  const [comments, setComments] = useState(() => {
+    // Try to load saved comments from localStorage
+    const savedComments = localStorage.getItem('comments');
+    // If there are saved comments, parse the JSON string back to an array
+    // Otherwise, fall back to the initial comments data
+    return savedComments ? JSON.parse(savedComments) : commentsData.comments;
+  });
   const [newComment, setNewComment] = useState('');
 
   const [isReplying, setIsReplying] = useState(false);
@@ -40,6 +49,12 @@ const CommentsComponent = () => {
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
+
+  useEffect(() => {
+    // Convert comments array to a JSON string and save in localStorage
+    localStorage.setItem('comments', JSON.stringify(comments));
+  }, [comments]); // This effect runs whenever the comments state changes
+
 
   const showDeleteModal = (commentId, replyId) => {
     setIsDeleteModalOpen(true);
